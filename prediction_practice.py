@@ -170,7 +170,8 @@ st.subheader("Production Data")
 st.dataframe(production_df)
 
 
-#streamlit run "<path_to_file>\Predictive Quality Control simulation.py"
+#streamlit run <path_to_file>\prediction_practice.py
+
 
 
 
