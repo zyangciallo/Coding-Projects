@@ -442,5 +442,5 @@ if user.history:
 else:
     st.info("No transaction history available to download.")
 
-# Type: streamlit run "yourpath\AMS_325_Project_Code.py"
+# Type: streamlit run "<path_to_file>\simplified_stock_trading_system.py"
 # in the terminal to display Streamlit.
