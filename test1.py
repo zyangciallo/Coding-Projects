@@ -8,23 +8,22 @@ import uuid
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+import os  # Add this import to access environment variables
+
 st.set_page_config(page_title="Stock Simulator", layout="wide")
-# Debugging: Check if Streamlit is running
+# testing diary
 st.write("✅ Test code loaded")
 print("✅ Test code loaded")
 
-# Debugging: Check if Streamlit is running
-st.title("🎉 Streamlit Test Page")
-st.write("This is a simple test to verify that Streamlit is working properly.")
-
-if st.button("Click me！"):
-    st.success("🎉 The button was clicked！")
+# code testing
+st.title("🎉 Stock Simulator")
+st.write("This is a stock simulator that mimics people's behavior in stocks.")
 
 # ...existing code...
 try:
-    st.write("🛠️ The program starts running…")
+    st.write("🛠️ operations begin running…")
 except Exception as e:
-    st.error(f"🚨 Initialization failed：{e}")
+    st.error(f"🚨 failed：{e}")
 
 from typing import List
 import pandas as pd
@@ -35,13 +34,13 @@ def get_stock_data(ticker: str, start_date: str, end_date: str, columns: List[st
         return data[columns]
     except Exception as e:
         st.error(f"🚨 Failed to fetch data for {ticker}: {e}")
-        return pd.DataFrame()
+        return pd.DataFrame()  # Return an empty DataFrame to avoid errors in the subsequent code.
 
 valid_tickers = ['AAPL', 'TSLA', 'MSFT']
 stock_data_dict = {}
 ticker = None 
 for ticker in valid_tickers:
-    df = get_stock_data(ticker, "2023-01-01", "2024-12-31", ["Close"])
+    df = get_stock_data(ticker, "2023-01-03", "2023-3-30", ["Close"])
     df = df.reset_index()
     stock_data_dict[ticker] = df
 
@@ -266,12 +265,17 @@ def print_portfolio_summary(user, current_price_dict):
     print(tabulate(table, headers=["Ticker", "Shares", "Avg Buy Price", "Current Price", "Market Value", "P/L"], tablefmt="pretty"))
     print(f"\n💼 Total Account Value: ${total_value:.2f}")
 
-st.title("✅ Streamlit Started normally ！")
-st.write("Welcome to your first Streamlit page 🎈")
+st.title("✅ Streamlit Successfully Begins！")
+st.write("Welcome to your first Stock Simulation Page 🎈")
 
 # Initialize user as an instance of the User class
 cash_input = st.number_input("💰 Enter initial cash:", min_value=0.0, value=10000.0, step=100.0)
-user = User(cash=cash_input)
+
+# Update or initialize session state for the user
+if "user" not in st.session_state or st.session_state.user.cash != cash_input:
+    st.session_state.user = User(cash=cash_input)
+
+user = st.session_state.user  # Use the persisted user object
 
 # Debugging: Log the initial state of user
 st.write("Initialized User:", user)
@@ -290,31 +294,40 @@ if ticker:
         st.success(f"✅ Loaded {ticker} data from {start} to {end}")
         st.line_chart(data.set_index('Date')['Close'])
 
-#  Show Stock News
-if ticker:
+from newsapi import NewsApiClient
+
+# Replace 'YOUR_NEWSAPI_KEY' with your actual NewsAPI key
+NEWS_API_KEY = os.getenv('NEWS_API_KEY')  # Fetch key from environment variables
+
+# Initialize NewsAPI client with fallback mechanism
+try:
+    if not NEWS_API_KEY:
+        st.warning("⚠️ NEWS_API_KEY is not set. Please enter it below.")
+        NEWS_API_KEY = st.text_input("🔑 Enter your NewsAPI Key:", type="password")
+        if not NEWS_API_KEY:
+            raise ValueError("NEWS_API_KEY is still not provided. Cannot proceed.")
+    newsapi = NewsApiClient(api_key=NEWS_API_KEY)
+    st.success("✅ NewsAPI client initialized successfully.")
+except Exception as e:
+    st.error(f"🚨 Failed to initialize NewsAPI client: {e}")
+    newsapi = None
+
+if ticker and newsapi:
     st.markdown("### 📰 Latest News")
     try:
-        stock = yf.Ticker(ticker)
-        news = stock.news
-        if news:
-            for article in news[:5]:
+        # Fetch news articles related to the stock ticker
+        articles = newsapi.get_everything(q=ticker, language='en', sort_by='publishedAt', page_size=5)
+        if articles and articles.get('articles'):
+            for article in articles['articles']:
                 title = article.get('title', 'No Title Available')
-
-                link = (
-                    article['canonicalUrl']['url'] if 'canonicalUrl' in article and 'url' in article['canonicalUrl'] else None or
-                    article['clickThroughUrl']['url'] if 'clickThroughUrl' in article and 'url' in article['clickThroughUrl'] else None or
-                    '#'
-                )
-                st.write(f"Extracted Link: {link}")
-                if link and link != '#':
-                    st.markdown(f"- [{title}]({link})")
-                else:
-                    st.markdown(f"- {title} (No link available)")
+                link = article.get('url', '#')  # Get the news link
+                st.markdown(f"- [{title}]({link})" if link and link != '#' else f"- {title} (No link available)")
         else:
-            st.info("No news available for this stock.")
+            st.info("ℹ️ No news available for this stock.")
     except Exception as e:
         st.error(f"🚨 Failed to fetch news for {ticker}: {e}")
-        
+        st.write("Debug Info:", e)
+
 # Debugging: Log the fetched data
 st.dataframe(data)
 
@@ -369,29 +382,32 @@ else:
             'total_value': total_value
         })
 
+        # Persist the updated user object
+        st.session_state.user = user
+
         # Debugging: Log the updated user and history
         st.write("Updated User:", user)
         st.write("History Records:", user.history)
-        # Calculate total assets and profit/loss
+        # Calculate total assets and profit
         total_assets = user.cash + sum(
             info['shares'] * price for ticker, info in user.stocks.items()
         )
-        profit = total_assets - cash_input  # Initial cash
+        profit = total_assets - cash_input  # initial cash as cash_input
 
-        # Display portfolio summary
+        # Display current cash and profit/loss
         st.write(f"💰 Current Cash: ${user.cash:.2f}")
         st.write(f"📈 Total Assets: ${total_assets:.2f}")
         st.write(f"📊 Profit/Loss: ${profit:.2f}")
 
-        # Display portfolio summary
+        # Provide trading history download functionality
         if user.history:
-            # Convert history to DataFrame
+            # Convert trading history to a DataFrame
             history_df = pd.DataFrame(user.history)
 
-            # Ensure time column is datetime
+            # Convert the DataFrame to CSV format
             csv = history_df.to_csv(index=False)
 
-            # Display portfolio summary
+            # Provide a download button
         st.download_button(
             label="📥 Download Transaction History",
             data=csv,
@@ -402,6 +418,29 @@ else:
             st.info("No transaction history available to download.")
     if st.button("Exit Market"):
         st.success("🚪 You have exited the market. Thank you for participating!")
-        st.stop()  # Stop the app
+        st.stop()  # Stop Streamlit
     if st.button("Next Day"):
         st.session_state.day += 1
+    # ...existing code...
+
+# Provide trading history download functionality
+if user.history:
+    # Convert trading history to a DataFrame
+    history_df = pd.DataFrame(user.history)
+
+    # Convert the DataFrame to CSV format
+    csv = history_df.to_csv(index=False)
+
+    # Provide a download button
+    st.download_button(
+        label="📥 Download Transaction History",
+        data=csv,
+        file_name="transaction_history.csv",
+        mime="text/csv",
+        key="download_transaction_history"  # Add a unique key
+    )
+else:
+    st.info("No transaction history available to download.")
+
+# Type: streamlit run "yourpath\AMS_325_Project_Code.py"
+# in the terminal to display Streamlit.
