@@ -16,7 +16,7 @@ st.write("✅ Test code loaded")
 print("✅ Test code loaded")
 
 # code testing
-st.title("🎉 Stock Simulator")
+st.title("💹 Stock Simulator")
 st.write("This is a stock simulator that mimics people's behavior in stocks.")
 
 # ...existing code...
