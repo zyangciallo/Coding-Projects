@@ -1,2 +1,2 @@
 # Coding-Projects
-Some of my personal coding project.
+Some of my personal and class coding project.
