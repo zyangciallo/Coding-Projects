@@ -106,7 +106,6 @@ total_defects = production_df.groupby(['Machine', 'Product'])['Defects'].sum().u
 st.bar_chart(total_defects)
 
 
-
 from sklearn.linear_model import LinearRegression
 st.subheader("Defect Rate Trend Analysis (Regression)")
 
@@ -138,8 +137,6 @@ for product in selected_products:
     st.write(f"Estimated daily change in defect rate: {model.coef_[0]:.4f}")
 
 
-
-
 st.subheader("Machine-Level Summary Report")
 
 # Aggregate production and defects by Machine and Product
@@ -168,16 +165,12 @@ rev_defects = production_df.groupby('Product')[['Revenue','Cost of Defects']].su
 st.bar_chart(rev_defects)
 
 
-
-
 #show data
 st.subheader("Production Data")
 st.dataframe(production_df)
 
 
+#streamlit run "<path_to_file>\Predictive Quality Control simulation.py"
 
-
-
-#streamlit run "C:\Users\86223\Downloads\Predictive Quality Control simulation.py"
 
 
