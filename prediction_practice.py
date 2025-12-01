@@ -171,6 +171,7 @@ st.dataframe(production_df)
 
 
 #streamlit run <path_to_file>\prediction_practice.py
+#type it in terminal
 
 
 
